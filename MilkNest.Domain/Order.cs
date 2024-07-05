@@ -8,11 +8,11 @@ namespace MilkNest.Domain
 {
     public class Order
     {
-        public int Id { get; set; }
-        public int UserId { get; set; }
-        public User User { get; set; }
-        public int ProductId { get; set; }
-        public Product Product { get; set; }
+        public Guid Id { get; set; }
+        public Guid UserId { get; set; }
+        public virtual User User { get; set; }
+        public Guid ProductId { get; set; }
+        public virtual Product Product { get; set; }
         public int Quantity { get; set; }
         public DateTime OrderDate { get; set; }
     }

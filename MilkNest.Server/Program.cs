@@ -1,25 +1,41 @@
+using MilkNest.Application;
+using MilkNest.Persistence;
 
 namespace MilkNest.Server
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+
+            builder.Services.AddApplication();
+            builder.Services.AddPersistance(builder.Configuration);
+
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    var context = services.GetRequiredService<MilkNestDbContext>();
+                    await context.Database.EnsureCreatedAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
+            }
 
             app.UseDefaultFiles();
             app.UseStaticFiles();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -30,12 +46,10 @@ namespace MilkNest.Server
 
             app.UseAuthorization();
 
-
             app.MapControllers();
-
             app.MapFallbackToFile("/index.html");
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }
