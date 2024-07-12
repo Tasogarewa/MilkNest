@@ -17,9 +17,9 @@ namespace MilkNest.Domain
             public bool IsAdmin { get; set; }
             public DateTime DateRegistered { get; set; }
             public bool IsOnline { get; set; }
-
-            public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-        public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
+            public virtual Image? Image { get; set; } 
+            public virtual ICollection<Order>? Orders { get; set; } = new List<Order>();
+        public virtual ICollection<Comment>? Comments { get; set; } = new List<Comment>();
         
     }
 }

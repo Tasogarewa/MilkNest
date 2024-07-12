@@ -12,8 +12,9 @@ namespace MilkNest.Domain
         public string Name { get; set; }
         public string Description { get; set; }
         public decimal Price { get; set; }
-        public string ImageUrl { get; set; }
-
+        public int Amount { get; set; }
+        public virtual ICollection<Image> Images { get; set; } = new List<Image>();
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+        public virtual ICollection<Comment> Comments { get;set; } = new List<Comment>();
     }
 }

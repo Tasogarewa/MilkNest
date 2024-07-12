@@ -13,5 +13,6 @@ namespace MilkNest.Domain
         public virtual User User { get; set; }
         public string Content { get; set; }
         public DateTime DatePosted { get; set; }
+        public DateTime DateUpdated { get; set; }
     }
 }
