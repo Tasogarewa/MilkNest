@@ -13,6 +13,6 @@ namespace MilkNest.Application.CQRS.User.Commands.CreateUser
         public string UserName { get; set; }
         public string Email { get; set; }
         public string PasswordHash { get; set; }
-        public IFormFile Image { get; set; }
+        public IFormFile? Image { get; set; }
     }
 }

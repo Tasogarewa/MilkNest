@@ -10,11 +10,13 @@ using MilkNest.Application.CQRS.User.Queries.GetUser;
 using MilkNest.Application.CQRS.User.Queries.GetUsers;
 using MilkNest.Application.Interfaces;
 using MilkNest.Domain;
+using MilkNest.Persistence.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace MilkNest.Persistence.Services
 {
@@ -33,10 +35,10 @@ namespace MilkNest.Persistence.Services
 
         public async Task<Guid> CreateProductAsync(CreateProductCommand createProduct)
         {
-            List<Image> images = new List<Image>();
+            List<Domain.Image> images = new List<Domain.Image>();
             foreach (var image in createProduct.Images)
             {
-                images.Add(new Image() { Url = await _fileStorageService.SaveFileAsync(image)});
+                images.Add(new Domain.Image { Url = await _fileStorageService.SaveFileAsync(image) });
             }
             var Product = await _productRepository.CreateAsync(new Product() { Amount = createProduct.Amount, Description = createProduct.Description, Name= createProduct.Name, Price = createProduct.Price, Images = images });
             return Product.Id;
@@ -47,6 +49,13 @@ namespace MilkNest.Persistence.Services
             var Product = await _productRepository.GetAsync(deleteProduct.Id);
             if (Product != null)
             {
+                List<Domain.Image> imagesToDelete = new List<Domain.Image>(Product.Images);
+                foreach (var image in imagesToDelete)
+                {
+                    await _fileStorageService.DeleteImageAsync(image.Id);
+                  
+                }
+                Product.Images.Clear();
                 await _productRepository.DeleteAsync(deleteProduct.Id);
                 return Unit.Value;
             }
@@ -89,16 +98,18 @@ namespace MilkNest.Persistence.Services
         public async Task<Guid> UpdateProductAsync(UpdateProductCommand updateProduct)
         {
             var Product = await _productRepository.GetAsync(updateProduct.Id);
-            List<Image> NewPhotos = new List<Image>();
+
             if (Product != null)
             {
-              foreach(var img in Product.Images)
+                List<Domain.Image> imagesToDelete = new List<Domain.Image>(Product.Images);
+                foreach (var img in imagesToDelete)
                 {
-                    _fileStorageService.DeleteFile(img.Url);
+                    await _fileStorageService.DeleteImageAsync(img.Id);
                 }
+                Product.Images.Clear();
                 foreach (var img in updateProduct.Images)
                 {
-                    Product.Images.Add(new Image() { Url = await _fileStorageService.SaveFileAsync(img) });
+                    Product.Images.Add(new Domain.Image() { Url = await _fileStorageService.SaveFileAsync(img) });
                 }
                 Product.Amount = updateProduct.Amount;
                 Product.Name = updateProduct.Name;
@@ -115,3 +126,4 @@ namespace MilkNest.Persistence.Services
         }
     }
 }
+

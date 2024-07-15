@@ -30,6 +30,7 @@ namespace MilkNest.Persistence.Repository
             T? entity = await _dbSet.FindAsync(Id);
             if (entity != null)
             {
+                
                 _dbSet.Remove(entity);
                 await _dbContext.SaveChangesAsync();
             }

@@ -36,21 +36,28 @@ namespace MilkNest.Persistence.Services
             {
                 images.Add(new Image() { Url = await _fileStorageService.SaveFileAsync(image) });
             }
-            var JobVacancy = await _jobvacancyRepository.CreateAsync(new JobVacancy() { Description = createJobVacancy.Description, Title = createJobVacancy.Title, Images = images,  PublishDate = DateTime.Now });
+            var JobVacancy = await _jobvacancyRepository.CreateAsync(new JobVacancy() { Description = createJobVacancy.Description, Title = createJobVacancy.Title, Images = images, PublishDate = DateTime.Now });
             return JobVacancy.Id;
         }
 
         public async Task<Unit> DeleteJobVacancyAsync(DeleteJobVacancyCommand deleteJobVacancy)
         {
-            var JobVacancy = await _jobvacancyRepository.GetAsync(deleteJobVacancy.Id);
-            if (JobVacancy != null)
+            var jobVacancy = await _jobvacancyRepository.GetAsync(deleteJobVacancy.Id);
+            if (jobVacancy != null)
             {
+                var imagesToDelete = new List<Image>(jobVacancy.Images);
+                foreach (var image in imagesToDelete)
+                {
+                    await _fileStorageService.DeleteImageAsync(image.Id);
+                }
+
+                jobVacancy.Images.Clear();
                 await _jobvacancyRepository.DeleteAsync(deleteJobVacancy.Id);
                 return Unit.Value;
             }
             else
             {
-                NotFoundException.Throw(JobVacancy, deleteJobVacancy.Id);
+                NotFoundException.Throw(jobVacancy, deleteJobVacancy.Id);
                 return Unit.Value;
             }
         }
@@ -61,7 +68,7 @@ namespace MilkNest.Persistence.Services
             if (JobVacancies != null)
             {
                 var jobVacanciesDtos = _mapper.ProjectTo<JobVacancyDto>(JobVacancies.AsQueryable()).ToList();
-                return new JobVacancyListVm() { JobVacancyDtos  = jobVacanciesDtos };
+                return new JobVacancyListVm() { JobVacancyDtos = jobVacanciesDtos };
             }
             else
             {
@@ -73,20 +80,23 @@ namespace MilkNest.Persistence.Services
         public async Task<Guid> UpdateJobVacancyAsync(UpdateJobVacancyCommand updateJobVacancy)
         {
             var JobVacancy = await _jobvacancyRepository.GetAsync(updateJobVacancy.Id);
-            List<Image> NewPhotos = new List<Image>();
             if (JobVacancy != null)
             {
-                foreach (var img in JobVacancy.Images)
+                List<Image> imagesToDelete = new List<Image>(JobVacancy.Images);
+                foreach (var img in imagesToDelete)
                 {
-                    _fileStorageService.DeleteFile(img.Url);
+                    await _fileStorageService.DeleteImageAsync(img.Id);
                 }
+                JobVacancy.Images.Clear();
                 foreach (var img in updateJobVacancy.Images)
                 {
-                    JobVacancy.Images.Add(new Image() { Url = await _fileStorageService.SaveFileAsync(img) });
+                    var newImage = new Image() { Url = await _fileStorageService.SaveFileAsync(img) };
+                    JobVacancy.Images.Add(newImage);
                 }
                 JobVacancy.UpdatedDate = DateTime.Now;
                 JobVacancy.Title = updateJobVacancy.Title;
                 JobVacancy.Description = updateJobVacancy.Description;
+
                 await _jobvacancyRepository.UpdateAsync(JobVacancy);
                 return JobVacancy.Id;
             }

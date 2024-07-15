@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace MilkNest.Persistence.Services
 {
@@ -32,7 +33,7 @@ namespace MilkNest.Persistence.Services
         public async Task<Guid> CreateUserAsync(CreateUserCommand createUser)
         {
 
-          var User = await _userRepository.CreateAsync(new User() { Email = createUser.Email, UserName = createUser.UserName, PasswordHash = createUser.PasswordHash, Image = new Image() { Url = await _fileStorageService.SaveFileAsync(createUser.Image) } });
+          var User = await _userRepository.CreateAsync(new User() { DateRegistered = DateTime.Now, Email = createUser.Email, UserName = createUser.UserName, PasswordHash = createUser.PasswordHash, Image = new Domain.Image() { Url = await _fileStorageService.SaveFileAsync(createUser.Image) } });
             return User.Id;
         }
 
@@ -41,6 +42,8 @@ namespace MilkNest.Persistence.Services
            var User = await _userRepository.GetAsync(deleteUser.Id);
             if (User != null)
             {
+                await _fileStorageService.DeleteImageAsync(User.Image.Id);
+              
                 await _userRepository.DeleteAsync(deleteUser.Id);
                 return Unit.Value;
             }

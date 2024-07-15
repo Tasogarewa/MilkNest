@@ -43,15 +43,22 @@ namespace MilkNest.Persistence.Services
 
         public async Task<Unit> DeleteNewsAsync(DeleteNewsCommand deleteNews)
         {
-            var News = await _newsRepository.GetAsync(deleteNews.Id);
-            if (News != null)
+            var news = await _newsRepository.GetAsync(deleteNews.Id);
+            if (news != null)
             {
+                var imagesToDelete = new List<Image>(news.Images);
+
+                foreach (var image in imagesToDelete)
+                {
+                    await _fileStorageService.DeleteImageAsync(image.Id);
+                }
+                news.Images.Clear();
                 await _newsRepository.DeleteAsync(deleteNews.Id);
                 return Unit.Value;
             }
             else
             {
-                NotFoundException.Throw(News, deleteNews.Id);
+                NotFoundException.Throw(news, deleteNews.Id);
                 return Unit.Value;
             }
         }
@@ -86,29 +93,34 @@ namespace MilkNest.Persistence.Services
         }
         public async Task<Guid> UpdateNewsAsync(UpdateNewsCommand updateNews)
         {
-            var News = await _newsRepository.GetAsync(updateNews.Id);
-            List<Image> NewPhotos = new List<Image>();
-            if (News != null)
+            var news = await _newsRepository.GetAsync(updateNews.Id);
+            if (news != null)
             {
-                foreach (var img in News.Images)
+                List<Image> imagesToDelete = new List<Image>(news.Images);
+                foreach (var img in imagesToDelete)
                 {
-                    _fileStorageService.DeleteFile(img.Url);
+                    await _fileStorageService.DeleteImageAsync(img.Id);
                 }
+                news.Images.Clear();
                 foreach (var img in updateNews.Images)
                 {
-                    News.Images.Add(new Image() { Url = await _fileStorageService.SaveFileAsync(img) });
+                    var newImage = new Image() { Url = await _fileStorageService.SaveFileAsync(img) };
+                    news.Images.Add(newImage);
                 }
-                News.UpdateDate = DateTime.Now;
-                News.Title = updateNews.Title;
-                News.Content = updateNews.Content;
-                await _newsRepository.UpdateAsync(News);
-                return News.Id;
+
+                news.UpdateDate = DateTime.Now;
+                news.Title = updateNews.Title;
+                news.Content = updateNews.Content;
+
+                await _newsRepository.UpdateAsync(news);
+                return news.Id;
             }
             else
             {
-                NotFoundException.Throw(News, updateNews.Id);
+                NotFoundException.Throw(news, updateNews.Id);
                 return Guid.Empty;
             }
         }
     }
-}
+    }
+

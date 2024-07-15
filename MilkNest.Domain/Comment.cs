@@ -14,5 +14,13 @@ namespace MilkNest.Domain
         public string Content { get; set; }
         public DateTime DatePosted { get; set; }
         public DateTime DateUpdated { get; set; }
+        public virtual ICollection<Comment>? Replies { get; set; } = new List<Comment>();
+        public Guid? NewsId { get; set; }
+        public virtual News? News { get; set; }
+        public Guid? ProductId { get; set; }
+        public virtual Product? Product { get; set; } 
+        public Guid? ParentCommentId { get; set; }
+        public virtual Comment? ParentComment { get; set; }
+
     }
 }

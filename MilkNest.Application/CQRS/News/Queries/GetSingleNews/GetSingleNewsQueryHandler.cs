@@ -12,6 +12,11 @@ namespace MilkNest.Application.CQRS.News.Queries.GetNews
     {
         private readonly INewsService _newsService;
 
+        public GetSingleNewsQueryHandler(INewsService newsService)
+        {
+            _newsService = newsService;
+        }
+
         public async Task<NewsVm> Handle(GetSingleNewsQuery request, CancellationToken cancellationToken)
         {
             return await _newsService.GetSingleNewsAsync(request);

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using MilkNest.Application.Common.Exceptions;
 using MilkNest.Application.CQRS.Comment.Commands.CreateComment;
 using MilkNest.Application.CQRS.Comment.Commands.DeleteComment;
@@ -20,19 +21,73 @@ namespace MilkNest.Persistence.Services
     {
         private readonly IRepository<User> _userRepository;
         private readonly IRepository<Comment> _commentRepository;
+        private readonly IRepository<Product> _productRepository;
+        private readonly IRepository<News> _newsRepository;
         private readonly IMapper _mapper;
 
-        public CommentService(IRepository<User> userRepository, IRepository<Comment> commentRepository, IMapper mapper)
+        public CommentService(IRepository<User> userRepository, IRepository<Comment> commentRepository, IRepository<Product> productRepository, IRepository<News> newsRepository, IMapper mapper)
         {
             _userRepository = userRepository;
             _commentRepository = commentRepository;
+            _productRepository = productRepository;
+            _newsRepository = newsRepository;
             _mapper = mapper;
         }
-
+       
         public async Task<Guid> CreateCommentAsync(CreateCommentCommand createComment)
         {
-            var Comment = await _commentRepository.CreateAsync(new Comment() {  Content = createComment.Content, User = await _userRepository.GetAsync(createComment.UserId),  DatePosted = DateTime.Now });
-            return Comment.Id;
+            Comment parentComment = null;
+            bool isReply = createComment.IsReply;
+
+            if (isReply)
+            {
+                parentComment = await _commentRepository.GetAsync(Guid.Parse(createComment.ReplyCommentId.ToString()));
+
+            }
+
+            Comment newComment = new Comment
+            {
+                Content = createComment.Content,
+                User = await _userRepository.GetAsync(createComment.UserId),
+                DatePosted = DateTime.Now,
+                Replies = null,
+                ParentComment = parentComment
+            };
+           
+            if (!isReply)
+            {
+                if (createComment.ProductId != null && createComment.ProductId != Guid.Empty)
+                {
+                    var product = await _productRepository.GetAsync(Guid.Parse(createComment.ProductId.ToString()));
+                    product.Comments.Add(newComment);
+                    await _productRepository.UpdateAsync(product);
+                }
+                else if (createComment.NewsId != null && createComment.NewsId != Guid.Empty)
+                {
+                    var news = await _newsRepository.GetAsync(Guid.Parse(createComment.NewsId.ToString()));
+                    news.Comments.Add(newComment);
+                    await _newsRepository.UpdateAsync(news);
+                }
+            }
+            else
+            {  
+                if (createComment.ProductId != null && createComment.ProductId != Guid.Empty)
+                {
+                    var product = await _productRepository.GetAsync(Guid.Parse(createComment.ProductId.ToString()));
+                    parentComment.Replies.Add(newComment);
+                    product.Comments.Add(newComment);
+                    
+                    await _productRepository.UpdateAsync(product);
+                }
+                else if (createComment.NewsId != null && createComment.NewsId != Guid.Empty)
+                {
+                    var news = await _newsRepository.GetAsync(Guid.Parse(createComment.NewsId.ToString()));
+                    parentComment.Replies.Add(newComment);
+                    news.Comments.Add(newComment);
+                    await _newsRepository.UpdateAsync(news);
+                }
+            }     
+            return Guid.Parse(newComment.Id.ToString());
         }
 
         public async Task<Unit> DeleteCommentAsync(DeleteCommentCommand deleteComment)
@@ -40,6 +95,7 @@ namespace MilkNest.Persistence.Services
             var Comment = await _commentRepository.GetAsync(deleteComment.Id);
             if (Comment != null)
             {
+                await RecursiveDeleteAsync(Comment);
                 await _commentRepository.DeleteAsync(deleteComment.Id);
                 return Unit.Value;
             }
@@ -49,7 +105,15 @@ namespace MilkNest.Persistence.Services
                 return Unit.Value;
             }
         }
+        private async Task RecursiveDeleteAsync(Comment comment)
+        {
+            foreach (var reply in comment.Replies.ToList())
+            {
+                await RecursiveDeleteAsync(reply);
+            }
 
+            await _commentRepository.DeleteAsync(comment.Id);
+        }
         public async Task<CommentListVm> GetCommentsAsync(GetCommentsQuery getComments)
         {
 

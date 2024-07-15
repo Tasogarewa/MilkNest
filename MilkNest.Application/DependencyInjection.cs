@@ -2,6 +2,7 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using MilkNest.Application.Common.Behaviors;
+using MilkNest.Application.Common.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,10 +26,14 @@ namespace MilkNest.Application
              typeof(PerformanceBehavior<,>));
             services.AddTransient(typeof(IPipelineBehavior<,>),
              typeof(CachingBehavior<,>));
-            services.AddTransient(typeof(IPipelineBehavior<,>),
-            typeof(RetryBehavior<,>));
+            services.AddMemoryCache();
+            services.AddAutoMapper(opt =>
+            {
+                
+                opt.AddProfile(new AssemblyMappingProfile(Assembly.GetExecutingAssembly()));
 
-           
+            });
+
             return services;
         }
     }

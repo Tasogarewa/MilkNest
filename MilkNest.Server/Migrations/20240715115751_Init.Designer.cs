@@ -12,8 +12,8 @@ using MilkNest.Persistence;
 namespace MilkNest.Server.Migrations
 {
     [DbContext(typeof(MilkNestDbContext))]
-    [Migration("20240711204424_Initial")]
-    partial class Initial
+    [Migration("20240715115751_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -28,10 +28,58 @@ namespace MilkNest.Server.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ImageJobVacancy", b =>
+                {
+                    b.Property<Guid>("ImagesId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JobVacanciesId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ImagesId", "JobVacanciesId");
+
+                    b.HasIndex("JobVacanciesId");
+
+                    b.ToTable("ImageJobVacancy");
+                });
+
+            modelBuilder.Entity("ImageNews", b =>
+                {
+                    b.Property<Guid>("ImagesId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("NewsId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ImagesId", "NewsId");
+
+                    b.HasIndex("NewsId");
+
+                    b.ToTable("ImageNews");
+                });
+
+            modelBuilder.Entity("ImageProduct", b =>
+                {
+                    b.Property<Guid>("ImagesId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductsId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ImagesId", "ProductsId");
+
+                    b.HasIndex("ProductsId");
+
+                    b.ToTable("ImageProduct");
+                });
+
             modelBuilder.Entity("MilkNest.Domain.Comment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CommentId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Content")
@@ -44,6 +92,12 @@ namespace MilkNest.Server.Migrations
                     b.Property<DateTime>("DateUpdated")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("NewsId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ParentCommentId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
@@ -51,6 +105,12 @@ namespace MilkNest.Server.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("NewsId");
+
+                    b.HasIndex("ParentCommentId");
 
                     b.HasIndex("ProductId");
 
@@ -65,26 +125,11 @@ namespace MilkNest.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("JobVacancyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("NewsId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ProductId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("JobVacancyId");
-
-                    b.HasIndex("NewsId");
-
-                    b.HasIndex("ProductId");
 
                     b.ToTable("Images");
                 });
@@ -229,9 +274,67 @@ namespace MilkNest.Server.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("ImageJobVacancy", b =>
+                {
+                    b.HasOne("MilkNest.Domain.Image", null)
+                        .WithMany()
+                        .HasForeignKey("ImagesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MilkNest.Domain.JobVacancy", null)
+                        .WithMany()
+                        .HasForeignKey("JobVacanciesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ImageNews", b =>
+                {
+                    b.HasOne("MilkNest.Domain.Image", null)
+                        .WithMany()
+                        .HasForeignKey("ImagesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MilkNest.Domain.News", null)
+                        .WithMany()
+                        .HasForeignKey("NewsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ImageProduct", b =>
+                {
+                    b.HasOne("MilkNest.Domain.Image", null)
+                        .WithMany()
+                        .HasForeignKey("ImagesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MilkNest.Domain.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MilkNest.Domain.Comment", b =>
                 {
-                    b.HasOne("MilkNest.Domain.Product", null)
+                    b.HasOne("MilkNest.Domain.Comment", null)
+                        .WithMany("Replies")
+                        .HasForeignKey("CommentId");
+
+                    b.HasOne("MilkNest.Domain.News", "News")
+                        .WithMany("Comments")
+                        .HasForeignKey("NewsId");
+
+                    b.HasOne("MilkNest.Domain.Comment", "ParentComment")
+                        .WithMany()
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MilkNest.Domain.Product", "Product")
                         .WithMany("Comments")
                         .HasForeignKey("ProductId");
 
@@ -241,22 +344,13 @@ namespace MilkNest.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("News");
+
+                    b.Navigation("ParentComment");
+
+                    b.Navigation("Product");
+
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("MilkNest.Domain.Image", b =>
-                {
-                    b.HasOne("MilkNest.Domain.JobVacancy", null)
-                        .WithMany("Images")
-                        .HasForeignKey("JobVacancyId");
-
-                    b.HasOne("MilkNest.Domain.News", null)
-                        .WithMany("Images")
-                        .HasForeignKey("NewsId");
-
-                    b.HasOne("MilkNest.Domain.Product", null)
-                        .WithMany("Images")
-                        .HasForeignKey("ProductId");
                 });
 
             modelBuilder.Entity("MilkNest.Domain.Order", b =>
@@ -281,27 +375,31 @@ namespace MilkNest.Server.Migrations
             modelBuilder.Entity("MilkNest.Domain.User", b =>
                 {
                     b.HasOne("MilkNest.Domain.Image", "Image")
-                        .WithMany()
-                        .HasForeignKey("ImageId");
+                        .WithMany("Users")
+                        .HasForeignKey("ImageId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Image");
                 });
 
-            modelBuilder.Entity("MilkNest.Domain.JobVacancy", b =>
+            modelBuilder.Entity("MilkNest.Domain.Comment", b =>
                 {
-                    b.Navigation("Images");
+                    b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("MilkNest.Domain.Image", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("MilkNest.Domain.News", b =>
                 {
-                    b.Navigation("Images");
+                    b.Navigation("Comments");
                 });
 
             modelBuilder.Entity("MilkNest.Domain.Product", b =>
                 {
                     b.Navigation("Comments");
-
-                    b.Navigation("Images");
 
                     b.Navigation("Orders");
                 });

@@ -15,5 +15,6 @@ namespace MilkNest.Domain
         public DateTime PublishDate { get; set; }
         public DateTime UpdateDate { get; set; }
         public virtual ICollection<Image> Images { get; set; } = new List<Image>();
+        public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
     }
 }

@@ -11,19 +11,16 @@ namespace MilkNest.Application.CQRS.News.Queries.GetNews
 {
     public class NewsDto:IMapWith<MilkNest.Domain.News>
     {
+        public Guid Id { get; set; }
         public string Title { get; set; }
-        public string Content { get; set; }
         public DateTime PublishDate { get; set; }
-        public DateTime UpdateDate { get; set; }
-        public  List<Image> Images { get; set; } 
+        public  List<string> Images { get; set; } 
         public void Mapping(Profile profile)
         {
             profile.CreateMap<MilkNest.Domain.News, NewsDto>().
-                ForMember(x => x.UpdateDate, opt => opt.MapFrom(x => x.UpdateDate)).
                  ForMember(x => x.Title, opt => opt.MapFrom(x => x.Title)).
-                  ForMember(x => x.Content, opt => opt.MapFrom(x => x.Content)).
                    ForMember(x => x.PublishDate, opt => opt.MapFrom(x => x.PublishDate)).
-                    ForMember(x => x.Images, opt => opt.MapFrom(x => x.Images));
+                    ForMember(x => x.Images, opt => opt.MapFrom(x => x.Images.Select(x=>x.Url).ToList()));
         }
     }
 }
