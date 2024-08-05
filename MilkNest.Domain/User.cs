@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,10 +12,7 @@ namespace MilkNest.Domain
     {
        
             public Guid Id { get; set; }
-            public string UserName { get; set; }
-            public string Email { get; set; }
-            public string PasswordHash { get; set; }
-            public bool IsAdmin { get; set; }
+         public virtual ApplicationUser ApplicationUser { get; set; }
             public DateTime DateRegistered { get; set; }
             public bool IsOnline { get; set; }
         public Guid? ImageId { get; set; }

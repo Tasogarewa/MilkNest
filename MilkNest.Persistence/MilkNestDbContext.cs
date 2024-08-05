@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MilkNest.Domain;
 using System;
 using System.Collections.Generic;
@@ -8,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace MilkNest.Persistence
 {
-    public class MilkNestDbContext : DbContext
+    public class MilkNestDbContext:IdentityDbContext<ApplicationUser>
     {
        
         public MilkNestDbContext(DbContextOptions options) : base(options)
@@ -24,6 +26,7 @@ namespace MilkNest.Persistence
         public virtual DbSet<JobVacancy> JobVacancies { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<User>()
             .HasMany(u => u.Comments)
             .WithOne(c => c.User)
@@ -78,7 +81,8 @@ namespace MilkNest.Persistence
                 .HasForeignKey(u => u.ImageId);
 
          
-            base.OnModelCreating(modelBuilder);
+            
         }
     }
+  
 }

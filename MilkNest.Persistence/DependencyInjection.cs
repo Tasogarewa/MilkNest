@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MilkNest.Application.Interfaces;
@@ -21,7 +22,9 @@ namespace MilkNest.Persistence
             services.AddDbContext<MilkNestDbContext>(options =>
             {
                 options.UseSqlServer(connectionString, b => b.MigrationsAssembly("MilkNest.Server")).UseLazyLoadingProxies();
+                
             });
+           
 
             services.AddRepositories();
             var assembly = Assembly.GetExecutingAssembly();

@@ -30,7 +30,7 @@ namespace MilkNest.Application.CQRS.Product.Queries.GetProducts
                 .ForMember(x => x.Price, opt => opt.MapFrom(x => x.Price))
                 .ForMember(x => x.Amount, opt => opt.MapFrom(x => x.Amount))
                  .ForMember(x => x.CommentContent, opt => opt.MapFrom(x => x.Comments.Take(4).Select(x=>x.Content).ToList()))
-                .ForMember(x => x.CommentUserName, opt => opt.MapFrom(x => x.Comments.Take(4).Select(x => x.User.UserName).ToList()))
+                .ForMember(x => x.CommentUserName, opt => opt.MapFrom(x => x.Comments.Take(4).Select(x => x.User.ApplicationUser.UserName).ToList()))
                  .ForMember(x => x.CommentUserImage, opt => opt.MapFrom(x => x.Comments.Take(4).Select(x => x.User.Image.Url).ToList()))
                 .ForMember(x => x.CommentPublished, opt => opt.MapFrom(x => x.Comments.Take(4).Select(x => x.DatePosted).ToList()))
                 .ForMember(x => x.QuantityOrdered, opt => opt.MapFrom(x => x.Orders.Count))

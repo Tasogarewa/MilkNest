@@ -19,9 +19,8 @@ namespace MilkNest.Application.CQRS.User.Queries.GetUsers
         public void Mapping(Profile profile)
         {
             profile.CreateMap<MilkNest.Domain.User, UserDto>()
-                .ForMember(x => x.IsAdmin, opt => opt.MapFrom(x => x.IsAdmin))
                 .ForMember(x => x.IsOnline, opt => opt.MapFrom(x => x.IsOnline))
-                .ForMember(x => x.UserName, opt => opt.MapFrom(x => x.UserName))
+                .ForMember(x => x.UserName, opt => opt.MapFrom(x => x.ApplicationUser.UserName))
                 .ForMember(x => x.ImageUrl, opt => opt.MapFrom(x => x.Image.Url));
         }
     }

@@ -33,7 +33,7 @@ namespace MilkNest.Persistence.Services
         public async Task<Guid> CreateUserAsync(CreateUserCommand createUser)
         {
 
-          var User = await _userRepository.CreateAsync(new User() { DateRegistered = DateTime.Now, Email = createUser.Email, UserName = createUser.UserName, PasswordHash = createUser.PasswordHash, Image = new Domain.Image() { Url = await _fileStorageService.SaveFileAsync(createUser.Image) } });
+          var User = await _userRepository.CreateAsync(new User() { DateRegistered = DateTime.Now, Image = new Domain.Image() { Url = await _fileStorageService.SaveFileAsync(createUser.Image) } });
             return User.Id;
         }
 
@@ -90,10 +90,9 @@ namespace MilkNest.Persistence.Services
             if (User != null)
             {
                 User.Image.Url = await _fileStorageService.UpdateFileAsync(updateUser.Image,User.Image.Url);
-                User.UserName = updateUser.UserName;
-                User.Email = updateUser.Email;
-                User.PasswordHash = updateUser.PasswordHash;
-                User.IsAdmin = updateUser.IsAdmin;
+                User.ApplicationUser.UserName = updateUser.UserName;
+                User.ApplicationUser.Email = updateUser.Email;
+                User.ApplicationUser.PasswordHash = updateUser.PasswordHash;
                 await _userRepository.UpdateAsync(User);
                 return updateUser.Id;
             }

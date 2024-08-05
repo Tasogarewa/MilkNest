@@ -26,7 +26,7 @@ namespace MilkNest.Application.CQRS.Order.Queries.GetOrders
                 ForMember(x => x.ProductName, opt => opt.MapFrom(x => x.Product.Name)).
                    ForMember(x => x.ProductId, opt => opt.MapFrom(x => x.Product.Id)).
                       ForMember(x => x.ProductImage, opt => opt.MapFrom(x => x.Product.Images.First().Url)).
-                        ForMember(x => x.UserName, opt => opt.MapFrom(x => x.User.UserName)).
+                        ForMember(x => x.UserName, opt => opt.MapFrom(x => x.User.ApplicationUser.UserName)).
                           ForMember(x => x.UserImage, opt => opt.MapFrom(x => x.User.Image.Url)).
                             ForMember(x => x.UserId, opt => opt.MapFrom(x => x.User.Id)).
                               ForMember(x => x.OrderDate, opt => opt.MapFrom(x => x.OrderDate));
