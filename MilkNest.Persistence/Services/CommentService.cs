@@ -24,16 +24,18 @@ namespace MilkNest.Persistence.Services
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<News> _newsRepository;
         private readonly IMapper _mapper;
+        private readonly ITranslationService _translationService;
 
-        public CommentService(IRepository<User> userRepository, IRepository<Comment> commentRepository, IRepository<Product> productRepository, IRepository<News> newsRepository, IMapper mapper)
+        public CommentService(IRepository<User> userRepository, IRepository<Comment> commentRepository, IRepository<Product> productRepository, IRepository<News> newsRepository, IMapper mapper, ITranslationService translationService)
         {
             _userRepository = userRepository;
             _commentRepository = commentRepository;
             _productRepository = productRepository;
             _newsRepository = newsRepository;
             _mapper = mapper;
+            _translationService = translationService;
         }
-       
+
         public async Task<Guid> CreateCommentAsync(CreateCommentCommand createComment)
         {
             Comment parentComment = null;
@@ -116,20 +118,44 @@ namespace MilkNest.Persistence.Services
         }
         public async Task<CommentListVm> GetCommentsAsync(GetCommentsQuery getComments)
         {
+            var comments = await _commentRepository.GetAllAsync();
 
-            var Comments = await _commentRepository.GetAllAsync();
-            if (Comments != null)
+            if (comments != null)
             {
-                var commentsDtos = _mapper.ProjectTo<CommentDto>(Comments.AsQueryable()).ToList();
-                return new CommentListVm() {  CommentDtos = commentsDtos };
+
+                var commentDtos = _mapper.Map<List<CommentDto>>(comments);
+
+                foreach (var commentDto in commentDtos)
+                {
+
+                    commentDto.Language = await _translationService.GetCurrentLanguageAsync();
+
+
+                    var comment = comments.FirstOrDefault(c => c.Id == commentDto.Id);
+                    if (comment != null)
+                    {
+                        var newsLocalization = comment.News?.Localizations.FirstOrDefault(l => l.Language == commentDto.Language);
+                        if (newsLocalization != null)
+                        {
+                            commentDto.NewsTitle = newsLocalization.Title;
+                        }
+
+                        var productLocalization = comment.Product?.Localizations.FirstOrDefault(l => l.Language == commentDto.Language);
+                        if (productLocalization != null)
+                        {
+                            commentDto.ProductTitle = productLocalization.Title;
+                        }
+                    }
+                }
+
+                return new CommentListVm() { CommentDtos = commentDtos };
             }
             else
             {
-                NotFoundException.ThrowRange(Comments);
+                NotFoundException.ThrowRange(comments);
                 return null;
             }
         }
-
         public async Task<Guid> UpdateCommentAsync(UpdateCommentCommand updateComment)
         {
             var Comment = await _commentRepository.GetAsync(updateComment.Id);

@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,5 +21,8 @@ namespace MilkNest.Domain
             public virtual ICollection<Order>? Orders { get; set; } = new List<Order>();
         public virtual ICollection<Comment>? Comments { get; set; } = new List<Comment>();
         
+    }
+    public class ApplicationUser : IdentityUser
+    {
     }
 }

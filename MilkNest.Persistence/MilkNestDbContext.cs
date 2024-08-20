@@ -24,6 +24,9 @@ namespace MilkNest.Persistence
         public virtual DbSet<News> News { get; set; }
         public virtual DbSet<Comment> Comments { get; set; }
         public virtual DbSet<JobVacancy> JobVacancies { get; set; }
+        public virtual DbSet<NewsLocalization> NewsLocalizations { get; set; }
+        public virtual DbSet<JobVacancyLocalization> JobVacancyLocalizations { get; set; }
+        public virtual DbSet<ProductLocalization> ProductLocalizations { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -38,6 +41,7 @@ namespace MilkNest.Persistence
             .WithOne(c => c.User)
             .HasForeignKey(c => c.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
 
             modelBuilder.Entity<User>()
          .HasOne(u => u.Image)
@@ -80,8 +84,24 @@ namespace MilkNest.Persistence
                 .WithMany(i => i.Users)
                 .HasForeignKey(u => u.ImageId);
 
-         
-            
+            modelBuilder.Entity<NewsLocalization>()
+          .HasOne(nl => nl.News)
+          .WithMany(n => n.Localizations)
+          .HasForeignKey(nl => nl.NewsId)
+          .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<JobVacancyLocalization>()
+         .HasOne(jvl => jvl.JobVacancy)
+         .WithMany(jv => jv.Localizations)
+         .HasForeignKey(jvl => jvl.JobVacancyId)
+         .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ProductLocalization>()
+           .HasOne(pl => pl.Product)
+           .WithMany(p => p.Localizations)
+           .HasForeignKey(pl => pl.ProductId)
+           .OnDelete(DeleteBehavior.Cascade);
+
         }
     }
   

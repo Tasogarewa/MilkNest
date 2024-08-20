@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using MediatR;
 using MilkNest.Application.Common.Exceptions;
+using MilkNest.Application.CQRS.News.Queries.GetNews;
 using MilkNest.Application.CQRS.Product.Commands.CreateProduct;
 using MilkNest.Application.CQRS.Product.Commands.DeleteProduct;
 using MilkNest.Application.CQRS.Product.Commands.UpdateProduct;
@@ -25,12 +26,14 @@ namespace MilkNest.Persistence.Services
         private readonly IRepository<Product> _productRepository;
         private readonly IMapper _mapper;
         private readonly IFileStorageService _fileStorageService;
+        private readonly ITranslationService _translationService;
 
-        public ProductService(IRepository<Product> productRepository, IMapper mapper, IFileStorageService fileStorageService)
+        public ProductService(IRepository<Product> productRepository, IMapper mapper, IFileStorageService fileStorageService, ITranslationService translationService)
         {
             _productRepository = productRepository;
             _mapper = mapper;
             _fileStorageService = fileStorageService;
+            _translationService = translationService;
         }
 
         public async Task<Guid> CreateProductAsync(CreateProductCommand createProduct)
@@ -40,7 +43,7 @@ namespace MilkNest.Persistence.Services
             {
                 images.Add(new Domain.Image { Url = await _fileStorageService.SaveFileAsync(image) });
             }
-            var Product = await _productRepository.CreateAsync(new Product() { Amount = createProduct.Amount, Description = createProduct.Description, Name= createProduct.Name, Price = createProduct.Price, Images = images });
+            var Product = await _productRepository.CreateAsync(new Product() { Amount = createProduct.Amount,Localizations = await _translationService.FillLocalizations<ProductLocalization>(createProduct.Description,createProduct.Title), Price = createProduct.Price, Images = images });
             return Product.Id;
         }
 
@@ -71,7 +74,16 @@ namespace MilkNest.Persistence.Services
             var Product = await _productRepository.GetAsync(getProduct.Id);
             if (Product != null)
             {
-                return _mapper.Map<ProductVm>(Product);
+                var MappedProduct = _mapper.Map<ProductVm>(Product);
+                MappedProduct.Language  = await _translationService.GetCurrentLanguageAsync();
+                var localization = Product.Localizations.FirstOrDefault(l => l.Language == MappedProduct.Language);
+                if (localization != null)
+                {
+                    MappedProduct.Title = localization.Title;
+                    MappedProduct.Description = localization.Description;
+                }
+
+                return MappedProduct;
             }
             else
             {
@@ -79,18 +91,35 @@ namespace MilkNest.Persistence.Services
                 return null;
             }
         }
-
+       
         public async Task<ProductListVm> GetProductsAsync(GetProductsQuery getProducts)
         {
-            var Products = await _productRepository.GetAllAsync();
-            if (Products != null)
+            var products = await _productRepository.GetAllAsync();
+
+            if (products != null)
             {
-                var productDtos = _mapper.ProjectTo<ProductDto>(Products.AsQueryable()).ToList();
+
+                var productDtos = _mapper.Map<List<ProductDto>>(products);
+
+                foreach (var productDto in productDtos)
+                {
+
+                    productDto.Language = await _translationService.GetCurrentLanguageAsync();
+
+                    var localization = products.FirstOrDefault(p => p.Id == productDto.Id)?
+                                       .Localizations.FirstOrDefault(l => l.Language == productDto.Language);
+                    if (localization != null)
+                    {
+                        productDto.Title = localization.Title;
+                        productDto.Description = localization.Description;
+                    }
+                }
+
                 return new ProductListVm() { ProductDtos = productDtos };
             }
             else
             {
-                NotFoundException.ThrowRange(Products);
+                NotFoundException.ThrowRange(products);
                 return null;
             }
         }
@@ -112,9 +141,9 @@ namespace MilkNest.Persistence.Services
                     Product.Images.Add(new Domain.Image() { Url = await _fileStorageService.SaveFileAsync(img) });
                 }
                 Product.Amount = updateProduct.Amount;
-                Product.Name = updateProduct.Name;
                 Product.Price = updateProduct.Price;
-                Product.Description = updateProduct.Description;
+                Product.Localizations.Clear();
+                Product.Localizations = await _translationService.FillLocalizations<ProductLocalization>(updateProduct.Description,updateProduct.Title);
                 await _productRepository.UpdateAsync(Product);
                 return Product.Id;
             }

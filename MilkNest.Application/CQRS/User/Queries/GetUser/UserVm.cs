@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using MilkNest.Application.Common.Mapping;
+using MilkNest.Application.Interfaces;
 using MilkNest.Domain;
 using System;
 using System.Collections.Generic;
@@ -11,6 +13,12 @@ namespace MilkNest.Application.CQRS.User.Queries.GetUser
 {
     public class UserVm:IMapWith<MilkNest.Domain.User>
     {
+     
+        public UserVm()
+        {
+        }
+
+
         public Guid Id { get; set; }
         public string UserName { get; set; }
         public string Email { get; set; }
@@ -22,7 +30,7 @@ namespace MilkNest.Application.CQRS.User.Queries.GetUser
         public List<string> OrderUserImg { get; set; }
         public List<string> OrderUserName { get; set; }
         public List<Guid> OrderUserGuid { get; set; }
-        public List<string> ProductName { get; set; }
+        public List<string> ProductTitle { get; set; }
         public List<string> ProductImages { get; set; }
         public List<Guid> ProductId{ get; set; }
         public List<decimal> Price { get; set; }
@@ -31,8 +39,10 @@ namespace MilkNest.Application.CQRS.User.Queries.GetUser
         public List<string> CommentUserImage { get; set; }
         public List<Guid> CommentUserId { get; set; }
         public List<DateTime> CommentPublished { get; set; }
-        public void Mapping(Profile profile)
+      public string Language { get; set; }
+        public  void Mapping(Profile profile)
         {
+         
             profile.CreateMap<MilkNest.Domain.User, UserVm>()
                 .ForMember(x => x.Email, opt => opt.MapFrom(x => x.ApplicationUser.Email))
                 .ForMember(x => x.DateRegistered, opt => opt.MapFrom(x => x.DateRegistered))
@@ -42,7 +52,7 @@ namespace MilkNest.Application.CQRS.User.Queries.GetUser
                 .ForMember(x => x.OrderUserImg, opt => opt.MapFrom(x => x.Orders.Select(x => x.User.Image.Url).ToList()))
                  .ForMember(x => x.OrderUserName, opt => opt.MapFrom(x => x.Orders.Select(x => x.User.ApplicationUser.UserName).ToList()))
                 .ForMember(x => x.OrderUserGuid, opt => opt.MapFrom(x => x.Orders.Select(x => x.UserId).ToList()))
-                .ForMember(x => x.ProductName, opt => opt.MapFrom(x => x.Orders.Select(x => x.Product.Name).ToList()))
+                .ForMember(x => x.ProductTitle, opt => opt.Ignore())
                 .ForMember(x => x.ProductImages, opt => opt.MapFrom(x => x.Orders.Select(x => x.Product.Images.Select(x=>x.Url)).ToList()))
                  .ForMember(x => x.ProductId, opt => opt.MapFrom(x => x.Orders.Select(x => x.Product.Id).ToList()))
                 .ForMember(x => x.Price, opt => opt.MapFrom(x => x.Orders.Select(x => x.Product.Price).ToList()))
@@ -53,5 +63,6 @@ namespace MilkNest.Application.CQRS.User.Queries.GetUser
                 .ForMember(x => x.CommentPublished, opt => opt.MapFrom(x => x.Comments.Select(x => x.DatePosted).ToList()))
                     .ForMember(x => x.CommentUserId, opt => opt.MapFrom(x => x.Comments.Select(x => x.UserId).ToList()));
         }
+       
     }
 }

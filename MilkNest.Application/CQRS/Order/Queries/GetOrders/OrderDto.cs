@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MilkNest.Application.Common.Mapping;
+using MilkNest.Application.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,13 @@ namespace MilkNest.Application.CQRS.Order.Queries.GetOrders
 {
     public class OrderDto:IMapWith<MilkNest.Domain.Order>
     {
+      
+        public OrderDto()
+        {
+        }
+
+     
+
         public Guid Id { get; set; }
         public string ProductName { get; set; }
         public string ProductImage { get; set; }
@@ -19,11 +27,13 @@ namespace MilkNest.Application.CQRS.Order.Queries.GetOrders
         public Guid UserId { get; set; }
         public int Quantity { get; set; }
         public DateTime OrderDate { get; set; }
-        public void Mapping(Profile profile)
+    public string Language { get; set; }
+        public async void Mapping(Profile profile)
         {
+        
             profile.CreateMap<MilkNest.Domain.Order, OrderDto>().
                 ForMember(x => x.Quantity, opt => opt.MapFrom(x => x.Quantity)).
-                ForMember(x => x.ProductName, opt => opt.MapFrom(x => x.Product.Name)).
+                ForMember(x => x.ProductName, opt => opt.Ignore()).
                    ForMember(x => x.ProductId, opt => opt.MapFrom(x => x.Product.Id)).
                       ForMember(x => x.ProductImage, opt => opt.MapFrom(x => x.Product.Images.First().Url)).
                         ForMember(x => x.UserName, opt => opt.MapFrom(x => x.User.ApplicationUser.UserName)).

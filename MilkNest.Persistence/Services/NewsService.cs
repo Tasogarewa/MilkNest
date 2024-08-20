@@ -22,12 +22,14 @@ namespace MilkNest.Persistence.Services
         private readonly IRepository<News> _newsRepository;
         private readonly IMapper _mapper;
         private readonly IFileStorageService _fileStorageService;
+        private readonly ITranslationService _translationService;
 
-        public NewsService(IRepository<News> newsRepository, IMapper mapper, IFileStorageService fileStorageService)
+        public NewsService(IRepository<News> newsRepository, IMapper mapper, IFileStorageService fileStorageService, ITranslationService translationService)
         {
             _newsRepository = newsRepository;
             _mapper = mapper;
             _fileStorageService = fileStorageService;
+            _translationService = translationService;
         }
 
         public async Task<Guid> CreateNewsAsync(CreateNewsCommand createNews)
@@ -37,7 +39,8 @@ namespace MilkNest.Persistence.Services
             {
                 images.Add(new Image() { Url = await _fileStorageService.SaveFileAsync(image) });
             }
-            var News = await _newsRepository.CreateAsync(new News() { Content = createNews.Content, Title = createNews.Title, Images = images, PublishDate = DateTime.Now });
+            var Localizations = await _translationService.FillLocalizations<NewsLocalization>(createNews.Description, createNews.Title);
+            var News = await _newsRepository.CreateAsync(new News() { Localizations = Localizations,  Images = images, PublishDate = DateTime.Now });
             return News.Id;
         }
 
@@ -65,29 +68,53 @@ namespace MilkNest.Persistence.Services
 
         public async Task<NewsListVm> GetNewsAsync(GetNewsQuery getNews)
         {
-            var News = await _newsRepository.GetAllAsync();
-            if (News != null)
+            var newsItems = await _newsRepository.GetAllAsync();
+
+            if (newsItems != null)
             {
-                var newsDtos = _mapper.ProjectTo<NewsDto>(News.AsQueryable()).ToList();
-                return new NewsListVm() {  NewsDtos = newsDtos };
+                var newsDtos = _mapper.Map<List<NewsDto>>(newsItems);
+
+                foreach (var newsDto in newsDtos)
+                {
+                    newsDto.Language = await _translationService.GetCurrentLanguageAsync();
+
+                    var localization = newsItems.FirstOrDefault(n => n.Id == newsDto.Id)?
+                                       .Localizations.FirstOrDefault(l => l.Language == newsDto.Language);
+                    if (localization != null)
+                    {
+                        newsDto.Title = localization.Title;
+                    }
+                }
+
+                return new NewsListVm() { NewsDtos = newsDtos };
             }
             else
             {
-                NotFoundException.ThrowRange(News);
+                NotFoundException.ThrowRange(newsItems);
                 return null;
             }
         }
-
         public async Task<NewsVm> GetSingleNewsAsync(GetSingleNewsQuery getSingleNews)
         {
-            var News = await _newsRepository.GetAsync(getSingleNews.Id);
-            if (News != null)
+            var newsItem = await _newsRepository.GetAsync(getSingleNews.Id);
+            if (newsItem != null)
             {
-                return _mapper.Map<NewsVm>(News);
+                var mappedSingleNews = _mapper.Map<NewsVm>(newsItem);
+
+                mappedSingleNews.Language = await _translationService.GetCurrentLanguageAsync();
+
+                var localization = newsItem.Localizations.FirstOrDefault(l => l.Language == mappedSingleNews.Language);
+                if (localization != null)
+                {
+                    mappedSingleNews.Title = localization.Title;
+                    mappedSingleNews.Description = localization.Description;
+                }
+
+                return mappedSingleNews;
             }
             else
             {
-                NotFoundException.Throw(News, getSingleNews.Id);
+                NotFoundException.Throw(newsItem, getSingleNews.Id);
                 return null;
             }
         }
@@ -109,8 +136,8 @@ namespace MilkNest.Persistence.Services
                 }
 
                 news.UpdateDate = DateTime.Now;
-                news.Title = updateNews.Title;
-                news.Content = updateNews.Content;
+                news.Localizations.Clear();
+                news.Localizations = await _translationService.FillLocalizations<NewsLocalization>(updateNews.Description,updateNews.Title);
 
                 await _newsRepository.UpdateAsync(news);
                 return news.Id;

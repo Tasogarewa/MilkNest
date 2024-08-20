@@ -22,12 +22,14 @@ namespace MilkNest.Persistence.Services
         private readonly IRepository<User> _userRepository;
         private readonly IMapper _mapper;
         private readonly IFileStorageService _fileStorageService;
+        private readonly ITranslationService _translationService;
 
-        public UserService(IRepository<User> userRepository, IMapper mapper, IFileStorageService fileStorageService)
+        public UserService(IRepository<User> userRepository, IMapper mapper, IFileStorageService fileStorageService, ITranslationService translationService)
         {
             _userRepository = userRepository;
             _mapper = mapper;
             _fileStorageService = fileStorageService;
+            _translationService = translationService;
         }
 
         public async Task<Guid> CreateUserAsync(CreateUserCommand createUser)
@@ -56,17 +58,26 @@ namespace MilkNest.Persistence.Services
 
         public async Task<UserVm> GetUserAsync(GetUserQuery getUser)
         {
-            var User = await _userRepository.GetAsync(getUser.Id);
-            if (User != null)
+            var user = await _userRepository.GetAsync(getUser.Id);
+            if (user != null)
             {
-                return _mapper.Map<UserVm>(User);
+                var mappedUser = _mapper.Map<UserVm>(user);
+
+                mappedUser.Language = await _translationService.GetCurrentLanguageAsync();
+
+                var productTitles = user.Orders.Select(o =>
+                    o.Product.Localizations.FirstOrDefault(l => l.Language == mappedUser.Language)?.Title
+                ).ToList();
+
+                mappedUser.ProductTitle = productTitles;
+
+                return mappedUser;
             }
             else
             {
-                NotFoundException.Throw(User, getUser.Id);
+                NotFoundException.Throw(user, getUser.Id);
                 return null;
             }
-            
         }
 
         public async Task<UserListVm> GetUsersAsync(GetUsersQuery getUsers)

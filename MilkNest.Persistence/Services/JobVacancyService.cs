@@ -21,14 +21,16 @@ namespace MilkNest.Persistence.Services
         private readonly IRepository<JobVacancy> _jobvacancyRepository;
         private readonly IMapper _mapper;
         private readonly IFileStorageService _fileStorageService;
+        private readonly ITranslationService _translationService;
 
-        public JobVacancyService(IRepository<JobVacancy> jobvacancyRepository, IMapper mapper, IFileStorageService fileStorageService)
+        public JobVacancyService(IRepository<JobVacancy> jobvacancyRepository, IMapper mapper, IFileStorageService fileStorageService, ITranslationService translationService)
         {
             _jobvacancyRepository = jobvacancyRepository;
             _mapper = mapper;
             _fileStorageService = fileStorageService;
+            _translationService = translationService;
         }
-
+       
         public async Task<Guid> CreateJobVacancyAsync(CreateJobVacancyCommand createJobVacancy)
         {
             List<Image> images = new List<Image>();
@@ -36,7 +38,7 @@ namespace MilkNest.Persistence.Services
             {
                 images.Add(new Image() { Url = await _fileStorageService.SaveFileAsync(image) });
             }
-            var JobVacancy = await _jobvacancyRepository.CreateAsync(new JobVacancy() { Description = createJobVacancy.Description, Title = createJobVacancy.Title, Images = images, PublishDate = DateTime.Now });
+            var JobVacancy = await _jobvacancyRepository.CreateAsync(new JobVacancy() { Localizations = await _translationService.FillLocalizations<JobVacancyLocalization>(createJobVacancy.Description,createJobVacancy.Title), Images = images, PublishDate = DateTime.Now });
             return JobVacancy.Id;
         }
 
@@ -64,21 +66,38 @@ namespace MilkNest.Persistence.Services
 
         public async Task<JobVacancyListVm> GetJobVacanciesAsync(GetJobVacanciesQuery getJobVacancies)
         {
-            var JobVacancies = await _jobvacancyRepository.GetAllAsync();
-            if (JobVacancies != null)
+            var jobVacancies = await _jobvacancyRepository.GetAllAsync();
+
+            if (jobVacancies != null)
             {
-                var jobVacanciesDtos = _mapper.ProjectTo<JobVacancyDto>(JobVacancies.AsQueryable()).ToList();
+            
+                var jobVacanciesDtos = _mapper.Map<List<JobVacancyDto>>(jobVacancies);
+
+                foreach (var jobVacancyDto in jobVacanciesDtos)
+                {
+                    jobVacancyDto.Language = await _translationService.GetCurrentLanguageAsync();
+
+                    var localization = jobVacancies.FirstOrDefault(j => j.Id == jobVacancyDto.Id)?
+                                       .Localizations.FirstOrDefault(l => l.Language == jobVacancyDto.Language);
+                    if (localization != null)
+                    {
+                        jobVacancyDto.Title = localization.Title;
+                        jobVacancyDto.Description = localization.Description;
+                    }
+                }
+
                 return new JobVacancyListVm() { JobVacancyDtos = jobVacanciesDtos };
             }
             else
             {
-                NotFoundException.ThrowRange(JobVacancies);
+                NotFoundException.ThrowRange(jobVacancies);
                 return null;
             }
         }
 
         public async Task<Guid> UpdateJobVacancyAsync(UpdateJobVacancyCommand updateJobVacancy)
         {
+          
             var JobVacancy = await _jobvacancyRepository.GetAsync(updateJobVacancy.Id);
             if (JobVacancy != null)
             {
@@ -94,8 +113,8 @@ namespace MilkNest.Persistence.Services
                     JobVacancy.Images.Add(newImage);
                 }
                 JobVacancy.UpdatedDate = DateTime.Now;
-                JobVacancy.Title = updateJobVacancy.Title;
-                JobVacancy.Description = updateJobVacancy.Description;
+                JobVacancy.Localizations.Clear();
+                JobVacancy.Localizations = await _translationService.FillLocalizations<JobVacancyLocalization>(updateJobVacancy.Description, updateJobVacancy.Title);
 
                 await _jobvacancyRepository.UpdateAsync(JobVacancy);
                 return JobVacancy.Id;

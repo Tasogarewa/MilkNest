@@ -22,13 +22,15 @@ namespace MilkNest.Persistence.Services
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<Order> _orderRepository;
         private readonly IMapper _mapper;
+        private readonly ITranslationService _translationService;
 
-        public OrderService(IRepository<User> userRepository, IRepository<Product> productRepository, IRepository<Order> orderRepository, IMapper mapper)
+        public OrderService(IRepository<User> userRepository, IRepository<Product> productRepository, IRepository<Order> orderRepository, IMapper mapper, ITranslationService translationService)
         {
             _userRepository = userRepository;
             _productRepository = productRepository;
             _orderRepository = orderRepository;
             _mapper = mapper;
+            _translationService = translationService;
         }
 
         public async Task<Guid> CreateOrderAsync(CreateOrderCommand createOrder)
@@ -54,16 +56,32 @@ namespace MilkNest.Persistence.Services
 
         public async Task<OrderListVm> GetOrdersAsync(GetOrdersQuery getOrders)
         {
+            var orders = await _orderRepository.GetAllAsync();
 
-            var Orders = await _orderRepository.GetAllAsync();
-            if (Orders != null)
+            if (orders != null)
             {
-                var orderDtos = _mapper.ProjectTo<OrderDto>(Orders.AsQueryable()).ToList();
-                return new OrderListVm() {  OrderDtos = orderDtos };
+                var orderDtos = _mapper.Map<List<OrderDto>>(orders);
+
+                foreach (var orderDto in orderDtos)
+                {
+                    orderDto.Language = await _translationService.GetCurrentLanguageAsync();
+
+                    var order = orders.FirstOrDefault(o => o.Id == orderDto.Id);
+                    if (order != null)
+                    {
+                        var productLocalization = order.Product?.Localizations.FirstOrDefault(l => l.Language == orderDto.Language);
+                        if (productLocalization != null)
+                        {
+                            orderDto.ProductName = productLocalization.Title;
+                        }
+                    }
+                }
+
+                return new OrderListVm() { OrderDtos = orderDtos };
             }
             else
             {
-                NotFoundException.ThrowRange(Orders);
+                NotFoundException.ThrowRange(orders);
                 return null;
             }
         }

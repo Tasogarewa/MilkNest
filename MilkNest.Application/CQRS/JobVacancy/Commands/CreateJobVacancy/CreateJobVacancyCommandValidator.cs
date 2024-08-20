@@ -11,9 +11,9 @@ namespace MilkNest.Application.CQRS.JobVacancy.Commands.CreateJobVacancy
     {
         public CreateJobVacancyCommandValidator()
         {
-            RuleFor(x => x.Images).NotEmpty().NotNull();
-            RuleFor(x=>x.Title).NotEmpty().NotNull().MaximumLength(200).MinimumLength(4);
-            RuleFor(x => x.Description).NotNull().NotEmpty().MaximumLength(5000).MinimumLength(100);
+            //RuleFor(x => x.Images).NotEmpty().NotNull();
+            //RuleFor(x=>x.Title).NotEmpty().NotNull().MaximumLength(200).MinimumLength(4);
+            //RuleFor(x => x.Description).NotNull().NotEmpty().MaximumLength(5000).MinimumLength(100);
         }
     }
 }

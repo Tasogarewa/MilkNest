@@ -14,6 +14,8 @@ using System.Security.Claims;
 using System.Text;
 using System.Net;
 using System.Security.Cryptography;
+using MilkNest.Server.Models.AccountModels;
+using MilkNest.Application.CQRS.User.Commands.CreateUser;
 
 namespace MilkNest.Server.Controllers
 {
@@ -26,14 +28,16 @@ namespace MilkNest.Server.Controllers
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
         private readonly ISmsService _smsService;
+        private readonly IUserService _userService;
 
-        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, IEmailService emailService, ISmsService smsService)
+        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, IEmailService emailService, ISmsService smsService, IUserService userService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
             _emailService = emailService;
             _smsService = smsService;
+            _userService = userService;
         }
 
         [HttpPost("register")]
@@ -48,7 +52,7 @@ namespace MilkNest.Server.Controllers
                 var confirmationLink = Url.Action(nameof(ConfirmEmail), "Account", new { userId = user.Id, token }, Request.Scheme);
                 var message = $"<p>Please confirm your account by clicking this link: <a href='{confirmationLink}'>link</a></p>";
                 await _emailService.SendEmailAsync(user.Email, "Confirm your email", message);
-
+                await Mediator.Send(new CreateUserCommand() {  ApplicationUser = user});
                 return Ok(new { message = "User created successfully. Please check your email to confirm your account." });
             }
 
@@ -386,6 +390,39 @@ namespace MilkNest.Server.Controllers
 
             return Ok(new { message = "2FA code has been sent to your email." });
         }
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return BadRequest(new { message = "User not found" });
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetLink = Url.Action("ResetPassword", "Account", new { token, email = user.Email }, Request.Scheme);
+            var message = $"<p>To reset your password, please click on this <a href='{resetLink}'>link</a>.</p>";
+
+            await _emailService.SendEmailAsync(user.Email, "Reset Password", message);
+            return Ok(new { message = "Password reset link has been sent to your email." });
+        }
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return BadRequest(new { message = "User not found" });
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+            if (result.Succeeded)
+            {
+                return Ok(new { message = "Password has been reset successfully." });
+            }
+
+            return BadRequest(result.Errors);
+        }
         [HttpPost("verify-2fa-email")]
         public async Task<IActionResult> Verify2FAEmail([FromBody] Verify2FAModel model)
         {
@@ -403,6 +440,23 @@ namespace MilkNest.Server.Controllers
 
             await _userManager.SetTwoFactorEnabledAsync(user, true);
             return Ok("2FA has been enabled.");
+        }
+        [HttpPost("contact")]
+        public async Task<IActionResult> Contact([FromBody] ContactModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Message))
+            {
+                return BadRequest(new { message = "All fields are required." });
+            }
+
+            var message = $"<p>You have received a new contact request:</p>" +
+                          $"<p><strong>Name:</strong> {model.Name}</p>" +
+                          $"<p><strong>Email:</strong> {model.Email}</p>" +
+                          $"<p><strong>Message:</strong><br /> {model.Message}</p>";
+
+            await _emailService.SendEmailAsync("milknestt@google.com", "New Contact Request", message);
+
+            return Ok(new { message = "Contact request sent successfully." });
         }
         [AllowAnonymous]
         [HttpGet]
@@ -459,7 +513,7 @@ namespace MilkNest.Server.Controllers
                         var token = GenerateJwtToken(user);
                         var refreshToken = GenerateRefreshToken();
                         await SaveRefreshToken(user, refreshToken);
-
+                        await Mediator.Send(new CreateUserCommand() { ApplicationUser = user });
                         return Ok(new { token, refreshToken });
                     }
                 }
@@ -482,49 +536,6 @@ namespace MilkNest.Server.Controllers
             return BadRequest(new { message = "Login Failed" });
         }
 
-        public class LockoutModel
-        {
-            public string UserId { get; set; }
-        }
-
-        public class UnlockModel
-        {
-            public string UserId { get; set; }
-        }
-        public class RegisterModel
-        {
-            public string Email { get; set; }
-            public string Password { get; set; }
-        }
-        public class Send2FACodeModel
-        {
-            public string Email { get; set; }
-        }
-        public class LoginModel
-        {
-            public string Email { get; set; }
-            public string Password { get; set; }
-        }
-
-        public class TokenModel
-        {
-            public string Token { get; set; }
-            public string RefreshToken { get; set; }
-        }
-        public class Login2FAModel
-        {
-            public string Email { get; set; }
-            public string Token { get; set; }
-        }
-        public class Enable2FAModel
-        {
-
-            public string PhoneNumber { get; set; }
-        }
-
-        public class Verify2FAModel
-        {
-            public string Token { get; set; }
-        }
+       
     }
 }

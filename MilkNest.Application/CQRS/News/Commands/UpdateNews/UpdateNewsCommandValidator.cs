@@ -11,9 +11,9 @@ namespace MilkNest.Application.CQRS.News.Commands.UpdateNews
     {
         public UpdateNewsCommandValidator()
         {
-            RuleFor(x => x.Content).NotEmpty().NotNull().MaximumLength(20000).MinimumLength(1000);
-            RuleFor(x => x.Images).NotNull().NotEmpty();
-            RuleFor(x => x.Title).NotEmpty().NotNull().MaximumLength(500).MinimumLength(4);
+            //RuleFor(x => x.Description).NotEmpty().NotNull().MaximumLength(20000).MinimumLength(1000);
+            //RuleFor(x => x.Images).NotNull().NotEmpty();
+            //RuleFor(x => x.Title).NotEmpty().NotNull().MaximumLength(500).MinimumLength(4);
         }
     }
 }

@@ -10,9 +10,7 @@ namespace MilkNest.Application.CQRS.User.Commands.CreateUser
     {
         public CreateUserCommandValidator()
         {
-            RuleFor(x => x.Email).NotNull().EmailAddress();
-            RuleFor(x => x.UserName).NotNull().MinimumLength(4).MaximumLength(50);
-            RuleFor(x => x.PasswordHash).ValidPassword();
+          
         }
       
     }

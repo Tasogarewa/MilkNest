@@ -18,7 +18,7 @@ namespace MilkNest.WebAPI.Controllers
         public async Task<IActionResult> CreateNews([FromForm] CreateNewsCommand command)
         {
             var newsId = await Mediator.Send(command);
-            return CreatedAtAction(nameof(GetSingleNews), new { id = newsId }, newsId);
+            return Ok(newsId);
         }
 
         [HttpDelete("{id}")]

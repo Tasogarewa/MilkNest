@@ -12,7 +12,7 @@ using MilkNest.Persistence;
 namespace MilkNest.Server.Migrations
 {
     [DbContext(typeof(MilkNestDbContext))]
-    [Migration("20240728162525_Initial")]
+    [Migration("20240808201205_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -338,16 +338,8 @@ namespace MilkNest.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("PublishDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedDate")
                         .HasColumnType("datetime2");
@@ -357,22 +349,42 @@ namespace MilkNest.Server.Migrations
                     b.ToTable("JobVacancies");
                 });
 
+            modelBuilder.Entity("MilkNest.Domain.JobVacancyLocalization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("JobVacancyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobVacancyId");
+
+                    b.ToTable("JobVacancyLocalizations");
+                });
+
             modelBuilder.Entity("MilkNest.Domain.News", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("PublishDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdateDate")
                         .HasColumnType("datetime2");
@@ -380,6 +392,34 @@ namespace MilkNest.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("News");
+                });
+
+            modelBuilder.Entity("MilkNest.Domain.NewsLocalization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("NewsId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NewsId");
+
+                    b.ToTable("NewsLocalizations");
                 });
 
             modelBuilder.Entity("MilkNest.Domain.Order", b =>
@@ -418,14 +458,6 @@ namespace MilkNest.Server.Migrations
                     b.Property<int>("Amount")
                         .HasColumnType("int");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -433,6 +465,34 @@ namespace MilkNest.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("MilkNest.Domain.ProductLocalization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductLocalizations");
                 });
 
             modelBuilder.Entity("MilkNest.Domain.User", b =>
@@ -592,6 +652,28 @@ namespace MilkNest.Server.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("MilkNest.Domain.JobVacancyLocalization", b =>
+                {
+                    b.HasOne("MilkNest.Domain.JobVacancy", "JobVacancy")
+                        .WithMany("Localizations")
+                        .HasForeignKey("JobVacancyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobVacancy");
+                });
+
+            modelBuilder.Entity("MilkNest.Domain.NewsLocalization", b =>
+                {
+                    b.HasOne("MilkNest.Domain.News", "News")
+                        .WithMany("Localizations")
+                        .HasForeignKey("NewsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("News");
+                });
+
             modelBuilder.Entity("MilkNest.Domain.Order", b =>
                 {
                     b.HasOne("MilkNest.Domain.Product", "Product")
@@ -609,6 +691,17 @@ namespace MilkNest.Server.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MilkNest.Domain.ProductLocalization", b =>
+                {
+                    b.HasOne("MilkNest.Domain.Product", "Product")
+                        .WithMany("Localizations")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("MilkNest.Domain.User", b =>
@@ -637,14 +730,23 @@ namespace MilkNest.Server.Migrations
                     b.Navigation("Users");
                 });
 
+            modelBuilder.Entity("MilkNest.Domain.JobVacancy", b =>
+                {
+                    b.Navigation("Localizations");
+                });
+
             modelBuilder.Entity("MilkNest.Domain.News", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("Localizations");
                 });
 
             modelBuilder.Entity("MilkNest.Domain.Product", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("Localizations");
 
                     b.Navigation("Orders");
                 });

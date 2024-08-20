@@ -67,8 +67,6 @@ namespace MilkNest.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     PublishDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -82,8 +80,6 @@ namespace MilkNest.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PublishDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdateDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -97,8 +93,6 @@ namespace MilkNest.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     Amount = table.Column<int>(type: "int", nullable: false)
                 },
@@ -264,6 +258,27 @@ namespace MilkNest.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "JobVacancyLocalizations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    JobVacancyId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Language = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_JobVacancyLocalizations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_JobVacancyLocalizations_JobVacancies_JobVacancyId",
+                        column: x => x.JobVacancyId,
+                        principalTable: "JobVacancies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ImageNews",
                 columns: table => new
                 {
@@ -281,6 +296,27 @@ namespace MilkNest.Server.Migrations
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_ImageNews_News_NewsId",
+                        column: x => x.NewsId,
+                        principalTable: "News",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "NewsLocalizations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    NewsId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Language = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NewsLocalizations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_NewsLocalizations_News_NewsId",
                         column: x => x.NewsId,
                         principalTable: "News",
                         principalColumn: "Id",
@@ -306,6 +342,27 @@ namespace MilkNest.Server.Migrations
                     table.ForeignKey(
                         name: "FK_ImageProduct_Products_ProductsId",
                         column: x => x.ProductsId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductLocalizations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Language = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductLocalizations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductLocalizations_Products_ProductId",
+                        column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -463,6 +520,16 @@ namespace MilkNest.Server.Migrations
                 column: "ProductsId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_JobVacancyLocalizations_JobVacancyId",
+                table: "JobVacancyLocalizations",
+                column: "JobVacancyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NewsLocalizations_NewsId",
+                table: "NewsLocalizations",
+                column: "NewsId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Orders_ProductId",
                 table: "Orders",
                 column: "ProductId");
@@ -471,6 +538,11 @@ namespace MilkNest.Server.Migrations
                 name: "IX_Orders_UserId",
                 table: "Orders",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductLocalizations_ProductId",
+                table: "ProductLocalizations",
+                column: "ProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_ApplicationUserId",
@@ -514,7 +586,16 @@ namespace MilkNest.Server.Migrations
                 name: "ImageProduct");
 
             migrationBuilder.DropTable(
+                name: "JobVacancyLocalizations");
+
+            migrationBuilder.DropTable(
+                name: "NewsLocalizations");
+
+            migrationBuilder.DropTable(
                 name: "Orders");
+
+            migrationBuilder.DropTable(
+                name: "ProductLocalizations");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -526,10 +607,10 @@ namespace MilkNest.Server.Migrations
                 name: "News");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "Users");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "Products");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

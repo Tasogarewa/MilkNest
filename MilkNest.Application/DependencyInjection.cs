@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using MilkNest.Application.Common.Behaviors;
 using MilkNest.Application.Common.Mapping;
 using System;
@@ -16,6 +17,7 @@ namespace MilkNest.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
+           
             services.AddMediatR(cnfg => cnfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
             services.AddTransient(typeof(IPipelineBehavior<,>),
@@ -26,6 +28,8 @@ namespace MilkNest.Application
              typeof(PerformanceBehavior<,>));
             services.AddTransient(typeof(IPipelineBehavior<,>),
              typeof(CachingBehavior<,>));
+          //  services.AddTransient(typeof(IPipelineBehavior<,>),
+          //typeof(LocalizationBehavior<,>));
             services.AddMemoryCache();
             services.AddAutoMapper(opt =>
             {

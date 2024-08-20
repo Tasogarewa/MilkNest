@@ -1,3 +1,4 @@
+using DeepL;
 using dotenv.net;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -7,6 +8,8 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MilkNest.Application;
@@ -14,6 +17,7 @@ using MilkNest.Application.Common.Mapping;
 using MilkNest.Domain;
 using MilkNest.Persistence;
 using MilkNest.Server.Middleware;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Security.Claims;
@@ -27,10 +31,34 @@ namespace MilkNest.Server
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddHealthChecks();
+            builder.Services.AddResponseCompression();
+            builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+            builder.Services.AddControllersWithViews()
+            .AddViewLocalization()
+            .AddDataAnnotationsLocalization();
+            builder.Services.Configure<RequestLocalizationOptions>(options =>
+            {
+                var supportedCultures = new[]
+                {
+                new CultureInfo("uk"),
+                new CultureInfo("en-Us"),
+                new CultureInfo("es"),
+                new CultureInfo("de"),
+                new CultureInfo("fr"),
+                new CultureInfo("ja"),
+                new CultureInfo("zh-cn"),
+                new CultureInfo("pt")
+               };
 
+                options.DefaultRequestCulture = new RequestCulture("uk");
+                options.SupportedCultures = supportedCultures;
+                options.SupportedUICultures = supportedCultures;
+            });
             var envFilePath = Path.Combine(Directory.GetCurrentDirectory(), "MilkNestEnv.env");
             DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { envFilePath }));
 
+        
 
             builder.Configuration.AddEnvironmentVariables();
 
@@ -46,9 +74,14 @@ namespace MilkNest.Server
                 {"Authentication:GitHub:ClientSecret", Environment.GetEnvironmentVariable("Authentication__GitHub__ClientSecret")},
                 {"Twilio:AccountSID", Environment.GetEnvironmentVariable("Twilio__AccountSID")},
                 {"Twilio:AuthToken", Environment.GetEnvironmentVariable("Twilio__AuthToken")},
-                {"Twilio:PhoneNumber", Environment.GetEnvironmentVariable("Twilio__PhoneNumber")}
+                {"Twilio:PhoneNumber", Environment.GetEnvironmentVariable("Twilio__PhoneNumber")},
+                {"DeepL:ApiKey", Environment.GetEnvironmentVariable("DeepL__ApiKey")}
               });
-
+            builder.Services.AddSingleton<ITranslator>(provider =>
+            {
+                var apiKey = builder.Configuration["DeepL:ApiKey"];
+                return new Translator(apiKey);
+            });
             builder.Services.AddCors(opt =>
             {
                 opt.AddPolicy("AllowAll", policy =>
@@ -101,7 +134,7 @@ namespace MilkNest.Server
             builder.Services.AddDistributedMemoryCache();
             builder.Services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromMinutes(30); 
+                options.IdleTimeout = TimeSpan.FromMinutes(300); 
                 options.Cookie.HttpOnly = true; 
                 options.Cookie.IsEssential = true; 
             });
@@ -203,6 +236,7 @@ namespace MilkNest.Server
             });
 
             var app = builder.Build();
+          
             app.Use(next => context =>
             {
                 var tokens = context.RequestServices.GetService<IAntiforgery>().GetAndStoreTokens(context);
@@ -237,21 +271,22 @@ namespace MilkNest.Server
             app.UseSession();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
+            app.UseRequestLocalization();
             app.UseCors("AllowAll");
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-
             app.UseCustomExceptionHandler();
-
+            app.UseResponseCaching();
+            //app.UseRateLimitingMiddleware();
+            app.UseLocalizationMiddleware();
+            app.UseRequestLoggingMiddleware();
             app.MapControllers();
-
+            app.UseResponseCompression();
+            app.UseHealthChecks("/health");
+            app.UseHsts();
             app.MapFallbackToFile("/index.html");
-            Console.WriteLine($"JWT Key: {Environment.GetEnvironmentVariable("JWT__KEY")}");
-            Console.WriteLine($"Facebook AppId: {Environment.GetEnvironmentVariable("Authentication__Facebook__AppId")}");
-            Console.WriteLine($"Google ClientId: {Environment.GetEnvironmentVariable("Authentication__Google__ClientId")}");
-            Console.WriteLine($"GitHub ClientId: {Environment.GetEnvironmentVariable("Authentication__GitHub__ClientId")}");
+            app.UseRequestLocalization();
             await app.RunAsync();
         }
 
